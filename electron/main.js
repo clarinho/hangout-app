@@ -98,7 +98,7 @@ const configureAutoUpdates = () => {
   autoUpdater.on("update-downloaded", () => {
     publishUpdateState({
       status: "downloaded",
-      message: "Update downloaded. Restarting to install.",
+      message: "Update downloaded. Installing silently. Hangout will reopen automatically.",
       percent: 100
     });
 

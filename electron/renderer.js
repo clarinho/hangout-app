@@ -146,7 +146,7 @@ const renderUpdateStatus = (status = {}) => {
   } else if (phase === "error") {
     els.updatePercent.textContent = "Update check unavailable";
   } else if (phase === "downloaded") {
-    els.updatePercent.textContent = "Restarting";
+    els.updatePercent.textContent = "Reopening automatically";
   }
 
   if (canDismiss) {
