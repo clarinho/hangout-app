@@ -1,6 +1,6 @@
 {
   "name": "hangout-journal",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "private": true,
   "description": "Electron desktop client for the Hangout C++ chat backend.",
   "author": "Hangout Journal",
@@ -13,8 +13,8 @@
     "publish:local": "electron-builder --win nsis --publish never"
   },
   "hangout": {
-    "apiBaseUrl": "https://YOUR_DOMAIN_OR_DROPLET_IP",
-    "updateFeedUrl": "https://YOUR_DOMAIN_OR_DROPLET_IP/updates/"
+    "apiBaseUrl": "http://45.55.245.3",
+    "updateFeedUrl": "http://45.55.245.3/updates/"
   },
   "build": {
     "appId": "com.hangoutjournal.desktop",
@@ -48,7 +48,7 @@
     "publish": [
       {
         "provider": "generic",
-        "url": "https://YOUR_DOMAIN_OR_DROPLET_IP/updates/"
+        "url": "http://45.55.245.3/updates/"
       }
     ]
   },

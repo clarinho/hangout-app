@@ -3,15 +3,26 @@ const { autoUpdater } = require("electron-updater");
 const path = require("path");
 const packageConfig = require("../package.json");
 
-const configuredApiBaseUrl =
+const normalizeBaseUrl = (value, fallback = "") => {
+  const raw = String(value || fallback).trim();
+  if (!raw) {
+    return "";
+  }
+
+  return /^https?:\/\//i.test(raw) ? raw.replace(/\/+$/, "") : `http://${raw.replace(/\/+$/, "")}`;
+};
+
+const configuredApiBaseUrl = normalizeBaseUrl(
   process.env.HANGOUT_API_BASE_URL ||
   packageConfig.hangout?.apiBaseUrl ||
-  "http://127.0.0.1:8080";
+    "http://127.0.0.1:8080"
+);
 
-const configuredUpdateFeedUrl =
+const configuredUpdateFeedUrl = normalizeBaseUrl(
   process.env.HANGOUT_UPDATE_FEED_URL ||
   packageConfig.hangout?.updateFeedUrl ||
-  "";
+    ""
+);
 
 const configureAutoUpdates = () => {
   autoUpdater.autoDownload = true;
