@@ -1,7 +1,30 @@
+const featureDefaults = {
+  socialFeatures: true,
+  messageSearch: true,
+  messageReactions: true,
+  messageEditing: true,
+  channelOrdering: true,
+  serverMembers: true,
+  presencePanel: true,
+  liveSync: true
+};
+
+const loadFeatureFlags = () => {
+  try {
+    return {
+      ...featureDefaults,
+      ...(JSON.parse(localStorage.getItem("hangout.features") || "{}") || {})
+    };
+  } catch {
+    return { ...featureDefaults };
+  }
+};
+
 const state = {
   apiBaseUrl: "",
   token: localStorage.getItem("hangout.token") || "",
   user: JSON.parse(localStorage.getItem("hangout.user") || "null"),
+  featureFlags: loadFeatureFlags(),
   updateDismissTimer: null,
   updateOverlayStartedAt: Date.now(),
   servers: [],
@@ -19,6 +42,7 @@ const state = {
 const $ = (id) => document.getElementById(id);
 
 const els = {
+  appShell: document.querySelector(".app-shell"),
   apiBaseText: $("apiBaseText"),
   accountAvatar: $("accountAvatar"),
   accountName: $("accountName"),
@@ -35,12 +59,14 @@ const els = {
   currentUser: $("currentUser"),
   avatarColorInput: $("avatarColorInput"),
   displayNameInput: $("displayNameInput"),
+  dmSectionHeading: $("dmSectionHeading"),
   dmList: $("dmList"),
   emptyState: $("emptyState"),
   closeFriendsButton: $("closeFriendsButton"),
   friendRequestForm: $("friendRequestForm"),
   friendsButton: $("friendsButton"),
   friendUsernameInput: $("friendUsernameInput"),
+  featureToggles: Array.from(document.querySelectorAll("[data-feature-toggle]")),
   friendsList: $("friendsList"),
   friendsOverlay: $("friendsOverlay"),
   loginForm: $("loginForm"),
@@ -69,6 +95,7 @@ const els = {
   regenerateInviteButton: $("regenerateInviteButton"),
   refreshDmsButton: $("refreshDmsButton"),
   refreshButton: $("refreshButton"),
+  presencePanel: $("presencePanel"),
   settingsApiBase: $("settingsApiBase"),
   settingsAvatar: $("settingsAvatar"),
   settingsButton: $("settingsButton"),
@@ -80,6 +107,7 @@ const els = {
   serverSettingsButton: $("serverSettingsButton"),
   serverSettingsOverlay: $("serverSettingsOverlay"),
   serverSettingsTitle: $("serverSettingsTitle"),
+  serverMembersHeading: $("serverMembersHeading"),
   serverMembersList: $("serverMembersList"),
   serverList: $("serverList"),
   serverName: $("serverName"),
@@ -106,6 +134,46 @@ const showToast = (message) => {
 const setConnected = (isConnected) => {
   els.connectionPill.textContent = isConnected ? "Backend online" : "Backend offline";
   els.connectionPill.classList.toggle("online", isConnected);
+};
+
+const saveFeatureFlags = () => {
+  localStorage.setItem("hangout.features", JSON.stringify(state.featureFlags));
+};
+
+const featureEnabled = (key) => state.featureFlags[key] !== false;
+
+const applyFeatureFlags = () => {
+  for (const toggle of els.featureToggles) {
+    toggle.checked = featureEnabled(toggle.dataset.featureToggle);
+  }
+
+  els.messageSearchInput.classList.toggle("hidden", !featureEnabled("messageSearch"));
+  els.friendsButton.classList.toggle("hidden", !featureEnabled("socialFeatures"));
+  els.dmSectionHeading.classList.toggle("hidden", !featureEnabled("socialFeatures"));
+  els.dmList.classList.toggle("hidden", !featureEnabled("socialFeatures"));
+  els.refreshDmsButton.disabled = !featureEnabled("socialFeatures") || !state.token;
+  els.presencePanel.classList.toggle("hidden", !featureEnabled("presencePanel"));
+  els.appShell.classList.toggle("no-presence-panel", !featureEnabled("presencePanel"));
+  els.serverMembersHeading.classList.toggle("hidden", !featureEnabled("serverMembers"));
+  els.serverMembersList.classList.toggle("hidden", !featureEnabled("serverMembers"));
+
+  if (!featureEnabled("messageSearch")) {
+    els.messageSearchInput.value = "";
+  }
+
+  if (!featureEnabled("socialFeatures") && state.activeMode === "dm") {
+    state.activeMode = "channel";
+    state.activeConversationId = null;
+    state.messages = [];
+  }
+};
+
+const setFeatureFlag = (key, value) => {
+  state.featureFlags[key] = value;
+  saveFeatureFlags();
+  applyFeatureFlags();
+  render();
+  startPolling();
 };
 
 const dismissUpdateOverlay = () => {
@@ -205,7 +273,8 @@ const renderUser = () => {
   els.createChannelButton.disabled = !state.token || !state.activeServerId;
   els.serverPlusButton.disabled = !state.token;
   els.serverSettingsButton.disabled = !state.token || !state.activeServerId;
-  els.friendsButton.disabled = !state.token;
+  els.friendsButton.disabled = !state.token || !featureEnabled("socialFeatures");
+  els.refreshDmsButton.disabled = !state.token || !featureEnabled("socialFeatures");
 };
 
 const renderServers = () => {
@@ -241,13 +310,18 @@ const renderChannels = () => {
     const button = document.createElement("button");
     button.className = `nav-button ${channel.id === state.activeChannelId ? "active" : ""}`;
     button.type = "button";
-    button.innerHTML = `
-      <span class="hash">#</span>
-      <span class="label">${escapeHtml(channel.name)}</span>
+    const orderingControls = featureEnabled("channelOrdering")
+      ? `
       <span class="channel-order">
         <button type="button" data-channel-move="${channel.id}" data-direction="-1">Up</button>
         <button type="button" data-channel-move="${channel.id}" data-direction="1">Down</button>
       </span>
+    `
+      : "";
+    button.innerHTML = `
+      <span class="hash">#</span>
+      <span class="label">${escapeHtml(channel.name)}</span>
+      ${orderingControls}
     `;
     button.addEventListener("click", (event) => {
       if (event.target.closest("[data-channel-move]")) {
@@ -261,6 +335,10 @@ const renderChannels = () => {
 
 const renderDmList = () => {
   els.dmList.innerHTML = "";
+  if (!featureEnabled("socialFeatures")) {
+    return;
+  }
+
   for (const conversation of state.dmConversations) {
     const button = document.createElement("button");
     button.className = `nav-button ${
@@ -337,28 +415,32 @@ const renderMessages = () => {
 
     const reactions = document.createElement("div");
     reactions.className = "reaction-row";
-    for (const reaction of message.reactions || []) {
-      const chip = document.createElement("button");
-      chip.className = `reaction-chip ${reaction.reactedByMe ? "active" : ""}`;
-      chip.type = "button";
-      chip.dataset.messageId = message.id;
-      chip.dataset.emoji = reaction.emoji;
-      chip.textContent = `${reaction.emoji} ${reaction.count}`;
-      reactions.appendChild(chip);
+    if (featureEnabled("messageReactions")) {
+      for (const reaction of message.reactions || []) {
+        const chip = document.createElement("button");
+        chip.className = `reaction-chip ${reaction.reactedByMe ? "active" : ""}`;
+        chip.type = "button";
+        chip.dataset.messageId = message.id;
+        chip.dataset.emoji = reaction.emoji;
+        chip.textContent = `${reaction.emoji} ${reaction.count}`;
+        reactions.appendChild(chip);
+      }
     }
 
     const tools = document.createElement("div");
     tools.className = "message-tools";
-    for (const emoji of ["+1", "fire", "laugh"]) {
-      const button = document.createElement("button");
-      button.className = "message-tool";
-      button.type = "button";
-      button.dataset.messageId = message.id;
-      button.dataset.emoji = emoji;
-      button.textContent = emoji;
-      tools.appendChild(button);
+    if (featureEnabled("messageReactions")) {
+      for (const emoji of ["+1", "fire", "laugh"]) {
+        const button = document.createElement("button");
+        button.className = "message-tool";
+        button.type = "button";
+        button.dataset.messageId = message.id;
+        button.dataset.emoji = emoji;
+        button.textContent = emoji;
+        tools.appendChild(button);
+      }
     }
-    if (state.user?.id === message.authorId) {
+    if (featureEnabled("messageEditing") && state.user?.id === message.authorId) {
       const edit = document.createElement("button");
       edit.className = "message-tool";
       edit.type = "button";
@@ -374,7 +456,13 @@ const renderMessages = () => {
       tools.appendChild(del);
     }
 
-    main.append(meta, content, reactions, tools);
+    main.append(meta, content);
+    if (featureEnabled("messageReactions")) {
+      main.appendChild(reactions);
+    }
+    if (tools.childElementCount > 0) {
+      main.appendChild(tools);
+    }
     row.append(avatar, main);
     els.messagePane.appendChild(row);
   }
@@ -453,6 +541,7 @@ const renderFriends = () => {
 };
 
 const render = () => {
+  applyFeatureFlags();
   renderUser();
   renderServers();
   renderChannels();
@@ -519,11 +608,19 @@ const loadMessages = async () => {
 
 const loadFriends = async () => {
   requireToken();
+  if (!featureEnabled("socialFeatures")) {
+    state.friends = { friends: [], inbound: [], outbound: [] };
+    return;
+  }
   state.friends = await window.hangout.friends(state.apiBaseUrl, state.token);
 };
 
 const loadDmConversations = async () => {
   requireToken();
+  if (!featureEnabled("socialFeatures")) {
+    state.dmConversations = [];
+    return;
+  }
   const payload = await window.hangout.dmConversations(state.apiBaseUrl, state.token);
   state.dmConversations = payload.conversations || [];
 };
@@ -803,13 +900,18 @@ const openServerSettings = async () => {
 
   els.serverSettingsTitle.textContent = server.name;
   els.inviteCodeText.textContent = "Loading";
+  els.serverMembersHeading.classList.toggle("hidden", !featureEnabled("serverMembers"));
+  els.serverMembersList.classList.toggle("hidden", !featureEnabled("serverMembers"));
+  els.serverMembersList.innerHTML = "";
   els.serverSettingsOverlay.classList.remove("hidden");
 
   try {
     const result = await window.hangout.serverInvite(state.apiBaseUrl, state.token, server.id);
     els.inviteCodeText.textContent = result.invite.inviteCode;
+    if (!featureEnabled("serverMembers")) {
+      return;
+    }
     const members = await window.hangout.serverMembers(state.apiBaseUrl, state.token, server.id);
-    els.serverMembersList.innerHTML = "";
     for (const member of members.members || []) {
       els.serverMembersList.insertAdjacentHTML(
         "beforeend",
@@ -823,6 +925,11 @@ const openServerSettings = async () => {
 };
 
 const openFriends = async () => {
+  if (!featureEnabled("socialFeatures")) {
+    showToast("Social features are turned off in Settings.");
+    return;
+  }
+
   if (!state.token) {
     showToast("Log in first.");
     return;
@@ -915,6 +1022,10 @@ els.channelList.addEventListener("click", (event) => {
   if (!button) {
     return;
   }
+  if (!featureEnabled("channelOrdering")) {
+    showToast("Channel ordering is turned off in Settings.");
+    return;
+  }
   event.stopPropagation();
   moveChannel(Number(button.dataset.channelMove), Number(button.dataset.direction));
 });
@@ -973,6 +1084,13 @@ els.profileForm.addEventListener("submit", async (event) => {
     showToast(error.message);
   }
 });
+
+for (const toggle of els.featureToggles) {
+  toggle.addEventListener("change", () => {
+    setFeatureFlag(toggle.dataset.featureToggle, toggle.checked);
+    showToast("Feature settings saved.");
+  });
+}
 
 els.friendsButton.addEventListener("click", openFriends);
 
@@ -1109,6 +1227,10 @@ els.messageSearchInput.addEventListener("keydown", async (event) => {
   if (event.key !== "Enter") {
     return;
   }
+  if (!featureEnabled("messageSearch")) {
+    showToast("Message search is turned off in Settings.");
+    return;
+  }
   const query = els.messageSearchInput.value.trim();
   if (state.activeMode !== "channel" || !state.activeChannelId) {
     return;
@@ -1164,6 +1286,10 @@ els.messagePane.addEventListener("click", async (event) => {
 
   try {
     if (editButton) {
+      if (!featureEnabled("messageEditing")) {
+        showToast("Message editing is turned off in Settings.");
+        return;
+      }
       const messageId = Number(editButton.dataset.editMessageId);
       const current = state.messages.find((message) => message.id === messageId);
       const content = await openNameModal({
@@ -1192,6 +1318,10 @@ els.messagePane.addEventListener("click", async (event) => {
     }
 
     if (deleteButton) {
+      if (!featureEnabled("messageEditing")) {
+        showToast("Message editing is turned off in Settings.");
+        return;
+      }
       const messageId = Number(deleteButton.dataset.deleteMessageId);
       if (state.activeMode === "dm") {
         await window.hangout.deleteDmMessage(state.apiBaseUrl, state.token, messageId);
@@ -1205,6 +1335,10 @@ els.messagePane.addEventListener("click", async (event) => {
     }
 
     if (reactionButton) {
+      if (!featureEnabled("messageReactions")) {
+        showToast("Reactions are turned off in Settings.");
+        return;
+      }
       const messageId = Number(reactionButton.dataset.messageId);
       const emoji = reactionButton.dataset.emoji;
       const result =
@@ -1223,12 +1357,17 @@ els.messagePane.addEventListener("click", async (event) => {
 
 const startPolling = () => {
   window.clearInterval(state.pollTimer);
+  if (!featureEnabled("liveSync")) {
+    return;
+  }
   state.pollTimer = window.setInterval(() => {
     if (state.token) {
       window.hangout.heartbeat(state.apiBaseUrl, state.token).catch(() => {});
-      loadFriends()
-        .then(() => renderFriends())
-        .catch(() => {});
+      if (featureEnabled("socialFeatures")) {
+        loadFriends()
+          .then(() => renderFriends())
+          .catch(() => {});
+      }
     }
 
     const hasTarget =

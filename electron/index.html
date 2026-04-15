@@ -73,7 +73,7 @@
         </div>
         <div id="channelList" class="nav-list channel-list"></div>
 
-        <div class="section-heading">
+        <div id="dmSectionHeading" class="section-heading">
           <span class="panel-section-title">Direct Messages</span>
           <button id="refreshDmsButton" class="mini-button" type="button">Sync</button>
         </div>
@@ -111,7 +111,7 @@
         </form>
       </main>
 
-      <aside class="presence-panel" aria-label="Activity">
+      <aside id="presencePanel" class="presence-panel" aria-label="Activity">
         <div class="presence-card">
           <p class="eyebrow">Session</p>
           <h3 id="currentUser">Guest</h3>
@@ -177,6 +177,77 @@
           Profile changes apply immediately to friend, member, and message surfaces as they refresh.
         </div>
 
+        <section class="feature-settings" aria-label="Feature switches">
+          <div>
+            <p class="eyebrow">Features</p>
+            <h3>Choose what Hangout shows</h3>
+          </div>
+
+          <label class="feature-toggle">
+            <span>
+              <strong>Social and DMs</strong>
+              <small>Friends, friend requests, and direct message lists.</small>
+            </span>
+            <input type="checkbox" data-feature-toggle="socialFeatures" />
+          </label>
+
+          <label class="feature-toggle">
+            <span>
+              <strong>Message search</strong>
+              <small>Search the current channel or DM from the top bar.</small>
+            </span>
+            <input type="checkbox" data-feature-toggle="messageSearch" />
+          </label>
+
+          <label class="feature-toggle">
+            <span>
+              <strong>Reactions</strong>
+              <small>Reaction chips and quick reaction buttons on messages.</small>
+            </span>
+            <input type="checkbox" data-feature-toggle="messageReactions" />
+          </label>
+
+          <label class="feature-toggle">
+            <span>
+              <strong>Edit and delete messages</strong>
+              <small>Owner controls for changing or removing sent messages.</small>
+            </span>
+            <input type="checkbox" data-feature-toggle="messageEditing" />
+          </label>
+
+          <label class="feature-toggle">
+            <span>
+              <strong>Channel ordering</strong>
+              <small>Show Up and Down controls beside channels.</small>
+            </span>
+            <input type="checkbox" data-feature-toggle="channelOrdering" />
+          </label>
+
+          <label class="feature-toggle">
+            <span>
+              <strong>Server member list</strong>
+              <small>Show members inside Server Settings.</small>
+            </span>
+            <input type="checkbox" data-feature-toggle="serverMembers" />
+          </label>
+
+          <label class="feature-toggle">
+            <span>
+              <strong>Presence sidebar</strong>
+              <small>Show the right activity and session panel.</small>
+            </span>
+            <input type="checkbox" data-feature-toggle="presencePanel" />
+          </label>
+
+          <label class="feature-toggle">
+            <span>
+              <strong>Live HTTP sync</strong>
+              <small>Poll for messages, friend requests, and presence while WebSockets are pending.</small>
+            </span>
+            <input type="checkbox" data-feature-toggle="liveSync" />
+          </label>
+        </section>
+
         <button id="logoutButton" class="danger-button" type="button">Log out</button>
       </section>
     </div>
@@ -204,7 +275,7 @@
         </div>
         <button id="regenerateInviteButton" class="primary-wide-button" type="button">Regenerate invite code</button>
 
-        <div class="panel-section-title members-heading">Members</div>
+        <div id="serverMembersHeading" class="panel-section-title members-heading">Members</div>
         <div id="serverMembersList" class="social-list"></div>
       </section>
     </div>
