@@ -1,0 +1,12 @@
+build/
+data/
+node_modules/
+release/
+
+*.db
+*.db-shm
+*.db-wal
+*.exe
+*.dll
+*.pdb
+*.ilk

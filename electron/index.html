@@ -1,0 +1,263 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Hangout</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <aside class="server-rail" aria-label="Servers">
+        <button class="server-logo active" id="homeButton" title="Hangout">
+          <span>H</span>
+        </button>
+        <div class="rail-separator"></div>
+        <div id="serverRail" class="server-list"></div>
+      </aside>
+
+      <aside class="channel-panel" aria-label="Channels">
+        <section class="brand-block">
+          <div class="brand-mark">hg</div>
+          <div>
+            <h1>Hangout</h1>
+            <p>Fast local chat</p>
+          </div>
+        </section>
+
+        <form id="loginForm" class="login-strip">
+          <label for="usernameInput">Username</label>
+          <div class="login-row">
+            <input id="usernameInput" name="username" autocomplete="username" placeholder="alice" />
+            <button type="submit">Log in</button>
+          </div>
+        </form>
+
+        <section id="accountStrip" class="account-strip hidden">
+          <div class="account-avatar" id="accountAvatar">A</div>
+          <div class="account-copy">
+            <strong id="accountName">Guest</strong>
+            <span>Signed in</span>
+          </div>
+          <button id="settingsButton" class="icon-button" type="button" title="Settings">Settings</button>
+        </section>
+
+        <div class="section-heading">
+          <span class="panel-section-title">Servers</span>
+          <div class="plus-wrap">
+            <button id="serverPlusButton" class="plus-button" type="button" title="Add server">+</button>
+            <div id="serverPlusMenu" class="plus-menu hidden">
+              <button id="createServerButton" type="button">Create server</button>
+              <button id="joinServerButton" type="button">Join server</button>
+            </div>
+          </div>
+        </div>
+        <div id="serverList" class="nav-list"></div>
+
+        <div class="section-heading">
+          <span class="panel-section-title">Channels</span>
+          <button id="createChannelButton" class="mini-button" type="button">New</button>
+        </div>
+        <div id="channelList" class="nav-list channel-list"></div>
+
+        <div class="section-heading">
+          <span class="panel-section-title">Direct Messages</span>
+          <button id="refreshDmsButton" class="mini-button" type="button">Sync</button>
+        </div>
+        <div id="dmList" class="nav-list"></div>
+      </aside>
+
+      <main class="chat-stage">
+        <header class="top-bar">
+          <div>
+            <p class="eyebrow" id="serverName">Not connected</p>
+            <h2 id="channelName">Choose a channel</h2>
+          </div>
+          <div class="top-actions">
+            <span id="connectionPill" class="status-pill">Backend offline</span>
+            <button id="friendsButton" class="ghost-button">Friends</button>
+            <button id="serverSettingsButton" class="ghost-button">Server Settings</button>
+            <input id="messageSearchInput" class="top-search" placeholder="Search messages" />
+            <button id="refreshButton" class="ghost-button">Refresh</button>
+          </div>
+        </header>
+
+        <section id="emptyState" class="empty-state">
+          <div class="empty-copy">
+            <span class="empty-kicker">Hangout desktop</span>
+            <h2>Log in and open a channel.</h2>
+            <p>Messages load from the C++ backend over HTTP. New sends appear instantly, then sync from SQLite.</p>
+          </div>
+        </section>
+
+        <section id="messagePane" class="message-pane" aria-label="Messages"></section>
+
+        <form id="messageForm" class="composer">
+          <input id="messageInput" autocomplete="off" placeholder="Message #general" disabled />
+          <button id="sendButton" type="submit" disabled>Send</button>
+        </form>
+      </main>
+
+      <aside class="presence-panel" aria-label="Activity">
+        <div class="presence-card">
+          <p class="eyebrow">Session</p>
+          <h3 id="currentUser">Guest</h3>
+          <p id="apiBaseText">Waiting for backend</p>
+        </div>
+
+        <div class="presence-card accent">
+          <p class="eyebrow">Realtime</p>
+          <h3>HTTP sync now</h3>
+          <p>WebSocket delivery can plug into the backend event bus next.</p>
+        </div>
+
+        <div class="activity-list">
+          <p class="panel-section-title">Prototype status</p>
+          <div class="activity-item online">
+            <span></span>
+            SQLite persistence
+          </div>
+          <div class="activity-item online">
+            <span></span>
+            Auth sessions
+          </div>
+          <div class="activity-item idle">
+            <span></span>
+            WebSockets next
+          </div>
+        </div>
+      </aside>
+    </div>
+
+    <div id="settingsOverlay" class="modal-overlay hidden">
+      <section class="modal">
+        <header class="modal-header">
+          <div>
+            <p class="eyebrow">Settings</p>
+            <h2>Profile</h2>
+          </div>
+          <button id="closeSettingsButton" class="icon-button" type="button">Close</button>
+        </header>
+
+        <div class="profile-row">
+          <div class="account-avatar large" id="settingsAvatar">A</div>
+          <div>
+            <h3 id="settingsUsername">Guest</h3>
+            <p id="settingsApiBase">Backend not connected</p>
+          </div>
+        </div>
+
+        <form id="profileForm" class="profile-form">
+          <input id="displayNameInput" placeholder="Display name" />
+          <input id="statusTextInput" placeholder="Status text" />
+          <select id="userStatusInput">
+            <option value="online">Online</option>
+            <option value="idle">Idle</option>
+            <option value="dnd">Do Not Disturb</option>
+            <option value="offline">Invisible</option>
+          </select>
+          <input id="avatarColorInput" placeholder="#c315d2" />
+          <button type="submit">Save Profile</button>
+        </form>
+
+        <div class="settings-note">
+          Profile changes apply immediately to friend, member, and message surfaces as they refresh.
+        </div>
+
+        <button id="logoutButton" class="danger-button" type="button">Log out</button>
+      </section>
+    </div>
+
+    <div id="serverSettingsOverlay" class="modal-overlay hidden">
+      <section class="modal">
+        <header class="modal-header">
+          <div>
+            <p class="eyebrow">Server Settings</p>
+            <h2 id="serverSettingsTitle">Server</h2>
+          </div>
+          <button id="closeServerSettingsButton" class="icon-button" type="button">Close</button>
+        </header>
+
+        <div class="settings-note">
+          Invite people with this server code. Anyone with the code can join this prototype server.
+        </div>
+
+        <div class="invite-box">
+          <div>
+            <span>Invite code</span>
+            <strong id="inviteCodeText">Loading</strong>
+          </div>
+          <button id="copyInviteButton" class="primary-inline-button" type="button">Copy code</button>
+        </div>
+        <button id="regenerateInviteButton" class="primary-wide-button" type="button">Regenerate invite code</button>
+
+        <div class="panel-section-title members-heading">Members</div>
+        <div id="serverMembersList" class="social-list"></div>
+      </section>
+    </div>
+
+    <div id="friendsOverlay" class="modal-overlay hidden">
+      <section class="modal wide-modal">
+        <header class="modal-header">
+          <div>
+            <p class="eyebrow">Social</p>
+            <h2>Friends</h2>
+          </div>
+          <button id="closeFriendsButton" class="icon-button" type="button">Close</button>
+        </header>
+
+        <form id="friendRequestForm" class="friend-add-form">
+          <input id="friendUsernameInput" autocomplete="off" placeholder="Username" />
+          <button type="submit">Send Request</button>
+        </form>
+
+        <div class="friends-grid">
+          <section>
+            <div class="panel-section-title">Friends</div>
+            <div id="friendsList" class="social-list"></div>
+          </section>
+          <section>
+            <div class="panel-section-title">Inbound Requests</div>
+            <div id="inboundRequestsList" class="social-list"></div>
+          </section>
+          <section>
+            <div class="panel-section-title">Outbound Requests</div>
+            <div id="outboundRequestsList" class="social-list"></div>
+          </section>
+        </div>
+      </section>
+    </div>
+
+    <div id="nameOverlay" class="modal-overlay hidden">
+      <form id="nameForm" class="modal">
+        <header class="modal-header">
+          <div>
+            <p class="eyebrow" id="nameModalKicker">Create</p>
+            <h2 id="nameModalTitle">New item</h2>
+          </div>
+          <button id="closeNameButton" class="icon-button" type="button">Close</button>
+        </header>
+
+        <label class="field-block" for="nameInput">
+          <span id="nameInputLabel">Name</span>
+          <input id="nameInput" autocomplete="off" />
+        </label>
+
+        <p id="nameHelpText" class="form-help">Choose a short readable name.</p>
+
+        <button id="nameSubmitButton" class="primary-wide-button" type="submit">Create</button>
+      </form>
+    </div>
+
+    <div id="profilePopover" class="profile-popover hidden">
+      <div class="account-avatar" id="popoverAvatar">U</div>
+      <div>
+        <strong id="popoverName">User</strong>
+        <span id="popoverMeta">Profile</span>
+      </div>
+    </div>
+
+    <div id="toast" class="toast" role="status"></div>
+    <script src="./renderer.js"></script>
+  </body>
+</html>

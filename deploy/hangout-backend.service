@@ -1,0 +1,17 @@
+[Unit]
+Description=Hangout C++ Backend
+After=network.target
+
+[Service]
+Type=simple
+User=hangout
+Group=hangout
+WorkingDirectory=/opt/hangout
+ExecStart=/opt/hangout/hangout_backend --host 127.0.0.1 --port 8080 --db /var/lib/hangout/hangout.db
+Restart=always
+RestartSec=3
+NoNewPrivileges=true
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,62 @@
+{
+  "name": "hangout-journal",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Electron desktop client for the Hangout C++ chat backend.",
+  "author": "Hangout Journal",
+  "main": "electron/main.js",
+  "scripts": {
+    "electron": "node electron/run.js",
+    "frontend": "node electron/run.js",
+    "dist": "electron-builder --win nsis",
+    "pack": "electron-builder --dir",
+    "publish:local": "electron-builder --win nsis --publish never"
+  },
+  "hangout": {
+    "apiBaseUrl": "https://YOUR_DOMAIN_OR_DROPLET_IP",
+    "updateFeedUrl": "https://YOUR_DOMAIN_OR_DROPLET_IP/updates/"
+  },
+  "build": {
+    "appId": "com.hangoutjournal.desktop",
+    "productName": "Hangout",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "electron/**/*",
+      "package.json"
+    ],
+    "asar": true,
+    "win": {
+      "signAndEditExecutable": false,
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ]
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true
+    },
+    "publish": [
+      {
+        "provider": "generic",
+        "url": "https://YOUR_DOMAIN_OR_DROPLET_IP/updates/"
+      }
+    ]
+  },
+  "devDependencies": {
+    "electron": "^41.2.0",
+    "electron-builder": "^26.0.12"
+  },
+  "dependencies": {
+    "electron-updater": "^6.6.2"
+  }
+}
