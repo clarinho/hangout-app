@@ -266,6 +266,21 @@ Give your friend the generated `Hangout Setup ... .exe`.
 
 The packaged app checks the update feed on launch. It downloads updates automatically and installs them when the app quits.
 
+The normal release command is:
+
+```powershell
+.\update
+```
+
+That command bumps the patch version, builds the NSIS installer, uploads `latest.yml`, the matching installer, and the matching blockmap to the droplet, then verifies the public update feed.
+
+Optional flags:
+
+```powershell
+.\update -Droplet 45.55.245.3 -RemoteUser root
+.\update -SkipVersionBump
+```
+
 To publish an update:
 
 1. Bump the version in `package.json`.
