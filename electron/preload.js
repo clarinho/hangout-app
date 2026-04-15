@@ -22,6 +22,12 @@ const request = async (apiBaseUrl, path, options = {}) => {
 
 contextBridge.exposeInMainWorld("hangout", {
   getConfig: () => ipcRenderer.invoke("config:get"),
+  getUpdateState: () => ipcRenderer.invoke("updates:getState"),
+  onUpdateStatus: (callback) => {
+    const listener = (_event, status) => callback(status);
+    ipcRenderer.on("updates:status", listener);
+    return () => ipcRenderer.removeListener("updates:status", listener);
+  },
   login: (apiBaseUrl, username) =>
     request(apiBaseUrl, "/api/v1/auth/login", {
       method: "POST",

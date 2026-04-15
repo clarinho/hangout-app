@@ -7,6 +7,19 @@
     <link rel="stylesheet" href="./styles.css" />
   </head>
   <body>
+    <section id="updateOverlay" class="update-overlay" aria-live="polite">
+      <div class="update-panel">
+        <div class="brand-mark">hg</div>
+        <p class="eyebrow">Hangout</p>
+        <h1 id="updateTitle">Checking for updates</h1>
+        <p id="updateMessage">Making sure you have the newest build.</p>
+        <div class="update-progress" aria-label="Update progress">
+          <div id="updateProgressFill" class="update-progress-fill"></div>
+        </div>
+        <span id="updatePercent" class="update-percent">Starting</span>
+      </div>
+    </section>
+
     <div class="app-shell">
       <aside class="server-rail" aria-label="Servers">
         <button class="server-logo active" id="homeButton" title="Hangout">

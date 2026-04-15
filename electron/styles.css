@@ -34,6 +34,95 @@ body {
   background: var(--bg);
 }
 
+.update-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background:
+    linear-gradient(180deg, rgba(195, 21, 210, 0.12), transparent 220px),
+    #07070b;
+  transition:
+    opacity 180ms ease,
+    visibility 180ms ease;
+}
+
+.update-overlay.dismissed {
+  visibility: hidden;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.update-panel {
+  display: grid;
+  justify-items: center;
+  width: min(420px, 100%);
+  gap: 12px;
+  text-align: center;
+}
+
+.update-panel .brand-mark {
+  margin-bottom: 6px;
+}
+
+.update-panel h1,
+.update-panel p {
+  margin: 0;
+}
+
+.update-panel h1 {
+  font-size: 28px;
+  line-height: 1.1;
+}
+
+.update-panel p {
+  max-width: 34ch;
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+.update-progress {
+  width: 100%;
+  height: 10px;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #111019;
+}
+
+.update-progress-fill {
+  width: 0%;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--accent), var(--cyan));
+  transition: width 160ms ease;
+}
+
+.update-progress.indeterminate .update-progress-fill {
+  width: 42%;
+  animation: update-scan 960ms ease-in-out infinite;
+}
+
+.update-percent {
+  min-height: 18px;
+  color: var(--dim);
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+@keyframes update-scan {
+  0% {
+    transform: translateX(-120%);
+  }
+
+  100% {
+    transform: translateX(240%);
+  }
+}
+
 button,
 input {
   font: inherit;

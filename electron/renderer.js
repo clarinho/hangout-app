@@ -2,6 +2,7 @@ const state = {
   apiBaseUrl: "",
   token: localStorage.getItem("hangout.token") || "",
   user: JSON.parse(localStorage.getItem("hangout.user") || "null"),
+  updateDismissTimer: null,
   servers: [],
   channels: [],
   messages: [],
@@ -84,6 +85,12 @@ const els = {
   serverRail: $("serverRail"),
   statusTextInput: $("statusTextInput"),
   toast: $("toast"),
+  updateMessage: $("updateMessage"),
+  updateOverlay: $("updateOverlay"),
+  updatePercent: $("updatePercent"),
+  updateProgress: document.querySelector(".update-progress"),
+  updateProgressFill: $("updateProgressFill"),
+  updateTitle: $("updateTitle"),
   userStatusInput: $("userStatusInput"),
   usernameInput: $("usernameInput")
 };
@@ -98,6 +105,52 @@ const showToast = (message) => {
 const setConnected = (isConnected) => {
   els.connectionPill.textContent = isConnected ? "Backend online" : "Backend offline";
   els.connectionPill.classList.toggle("online", isConnected);
+};
+
+const dismissUpdateOverlay = () => {
+  els.updateOverlay.classList.add("dismissed");
+};
+
+const renderUpdateStatus = (status = {}) => {
+  const phase = status.status || "checking";
+  const percent = Math.max(0, Math.min(100, Number(status.percent) || 0));
+  const isDownloading = phase === "downloading" || phase === "downloaded";
+  const isChecking = phase === "checking" || phase === "available" || phase === "idle";
+  const canDismiss = ["not-available", "skipped", "error"].includes(phase);
+
+  window.clearTimeout(state.updateDismissTimer);
+  els.updateOverlay.classList.remove("dismissed");
+  els.updateProgress.classList.toggle("indeterminate", isChecking && !isDownloading);
+  els.updateProgressFill.style.width = isDownloading ? `${percent}%` : "0%";
+
+  const titles = {
+    idle: "Checking for updates",
+    checking: "Checking for updates",
+    available: "Update found",
+    downloading: "Downloading update",
+    downloaded: "Installing update",
+    "not-available": "You're up to date",
+    skipped: "Starting Hangout",
+    error: "Starting Hangout"
+  };
+
+  els.updateTitle.textContent = titles[phase] || "Checking for updates";
+  els.updateMessage.textContent = status.message || "Making sure you have the newest build.";
+  els.updatePercent.textContent = isDownloading ? `${Math.round(percent)}%` : "Please wait";
+
+  if (phase === "not-available") {
+    els.updatePercent.textContent = "Current version";
+  } else if (phase === "skipped") {
+    els.updatePercent.textContent = "Development mode";
+  } else if (phase === "error") {
+    els.updatePercent.textContent = "Update check unavailable";
+  } else if (phase === "downloaded") {
+    els.updatePercent.textContent = "Restarting";
+  }
+
+  if (canDismiss) {
+    state.updateDismissTimer = window.setTimeout(dismissUpdateOverlay, 900);
+  }
 };
 
 const initials = (value) =>
@@ -1191,6 +1244,9 @@ const startPolling = () => {
 };
 
 const boot = async () => {
+  window.hangout.onUpdateStatus(renderUpdateStatus);
+  renderUpdateStatus(await window.hangout.getUpdateState());
+
   const config = await window.hangout.getConfig();
   state.apiBaseUrl = config.apiBaseUrl;
   els.apiBaseText.textContent = state.apiBaseUrl;
