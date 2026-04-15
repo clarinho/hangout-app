@@ -1,10 +1,13 @@
 #pragma once
 
+#include <memory>
 #include <string>
 
-#include <httplib.h>
-
 namespace hangout {
+
+namespace httplib_detail {
+class ServerHolder;
+}
 
 class AuthService;
 class ChatService;
@@ -17,6 +20,11 @@ public:
                SocialService& social_service,
                std::string host,
                int port);
+    ~HttpServer();
+
+    HttpServer(const HttpServer&) = delete;
+    HttpServer& operator=(const HttpServer&) = delete;
+
     void run();
 
 private:
@@ -27,7 +35,7 @@ private:
     SocialService& social_service_;
     std::string host_;
     int port_;
-    httplib::Server server_;
+    std::unique_ptr<httplib_detail::ServerHolder> server_;
 };
 
 }  // namespace hangout

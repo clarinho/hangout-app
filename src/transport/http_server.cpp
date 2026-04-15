@@ -1,8 +1,11 @@
 #include "hangout/transport/http_server.hpp"
 
 #include <iostream>
+#include <memory>
 #include <string>
+#include <utility>
 
+#include <httplib.h>
 #include <json.hpp>
 
 #include "hangout/application/auth_service.hpp"
@@ -11,6 +14,16 @@
 #include "hangout/domain/errors.hpp"
 
 namespace hangout {
+
+namespace httplib_detail {
+
+class ServerHolder {
+public:
+    httplib::Server server;
+};
+
+}  // namespace httplib_detail
+
 namespace {
 
 using json = nlohmann::json;
@@ -235,26 +248,31 @@ HttpServer::HttpServer(AuthService& auth_service,
       chat_service_(chat_service),
       social_service_(social_service),
       host_(std::move(host)),
-      port_(port) {
+      port_(port),
+      server_(std::make_unique<httplib_detail::ServerHolder>()) {
     configure_routes();
 }
 
+HttpServer::~HttpServer() = default;
+
 void HttpServer::configure_routes() {
-    server_.set_default_headers({
+    auto& server = server_->server;
+
+    server.set_default_headers({
         { "Access-Control-Allow-Origin", "*" },
         { "Access-Control-Allow-Headers", "Content-Type, Authorization" },
         { "Access-Control-Allow-Methods", "GET, POST, DELETE, OPTIONS" },
     });
 
-    server_.Options(R"(.*)", [](const httplib::Request&, httplib::Response& res) {
+    server.Options(R"(.*)", [](const httplib::Request&, httplib::Response& res) {
         res.status = 204;
     });
 
-    server_.Get("/healthz", [](const httplib::Request&, httplib::Response& res) {
+    server.Get("/healthz", [](const httplib::Request&, httplib::Response& res) {
         res.set_content("{\"status\":\"ok\"}", "application/json");
     });
 
-    server_.Post("/api/v1/auth/login", [this](const httplib::Request& req, httplib::Response& res) {
+    server.Post("/api/v1/auth/login", [this](const httplib::Request& req, httplib::Response& res) {
         handle_errors(res, [&]() {
             const auto body = parse_body(req);
             const auto username = body.value("username", "");
@@ -269,14 +287,14 @@ void HttpServer::configure_routes() {
         });
     });
 
-    server_.Get("/api/v1/me", [this](const httplib::Request& req, httplib::Response& res) {
+    server.Get("/api/v1/me", [this](const httplib::Request& req, httplib::Response& res) {
         handle_errors(res, [&]() {
             const auto session = auth_service_.require_session(extract_bearer_token(req));
             res.set_content(json { { "user", user_json(session.user) } }.dump(2), "application/json");
         });
     });
 
-    server_.Post("/api/v1/me/profile", [this](const httplib::Request& req, httplib::Response& res) {
+    server.Post("/api/v1/me/profile", [this](const httplib::Request& req, httplib::Response& res) {
         handle_errors(res, [&]() {
             const auto session = auth_service_.require_session(extract_bearer_token(req));
             const auto body = parse_body(req);
@@ -289,7 +307,7 @@ void HttpServer::configure_routes() {
         });
     });
 
-    server_.Post("/api/v1/me/heartbeat", [this](const httplib::Request& req, httplib::Response& res) {
+    server.Post("/api/v1/me/heartbeat", [this](const httplib::Request& req, httplib::Response& res) {
         handle_errors(res, [&]() {
             const auto session = auth_service_.require_session(extract_bearer_token(req));
             auth_service_.heartbeat(session);
@@ -297,7 +315,7 @@ void HttpServer::configure_routes() {
         });
     });
 
-    server_.Get("/api/v1/friends", [this](const httplib::Request& req, httplib::Response& res) {
+    server.Get("/api/v1/friends", [this](const httplib::Request& req, httplib::Response& res) {
         handle_errors(res, [&]() {
             const auto session = auth_service_.require_session(extract_bearer_token(req));
             const auto snapshot = social_service_.list_friends(session);
@@ -305,7 +323,7 @@ void HttpServer::configure_routes() {
         });
     });
 
-    server_.Post("/api/v1/friends/requests", [this](const httplib::Request& req, httplib::Response& res) {
+    server.Post("/api/v1/friends/requests", [this](const httplib::Request& req, httplib::Response& res) {
         handle_errors(res, [&]() {
             const auto session = auth_service_.require_session(extract_bearer_token(req));
             const auto body = parse_body(req);
@@ -318,7 +336,7 @@ void HttpServer::configure_routes() {
         });
     });
 
-    server_.Post(R"(/api/v1/friends/requests/(\d+)/accept)",
+    server.Post(R"(/api/v1/friends/requests/(\d+)/accept)",
                  [this](const httplib::Request& req, httplib::Response& res) {
                      handle_errors(res, [&]() {
                          const auto session =
@@ -328,7 +346,7 @@ void HttpServer::configure_routes() {
                      });
                  });
 
-    server_.Post(R"(/api/v1/friends/requests/(\d+)/deny)",
+    server.Post(R"(/api/v1/friends/requests/(\d+)/deny)",
                  [this](const httplib::Request& req, httplib::Response& res) {
                      handle_errors(res, [&]() {
                          const auto session =
@@ -338,7 +356,7 @@ void HttpServer::configure_routes() {
                      });
                  });
 
-    server_.Delete(R"(/api/v1/friends/(\d+))",
+    server.Delete(R"(/api/v1/friends/(\d+))",
                    [this](const httplib::Request& req, httplib::Response& res) {
                        handle_errors(res, [&]() {
                            const auto session =
@@ -348,7 +366,7 @@ void HttpServer::configure_routes() {
                        });
                    });
 
-    server_.Get("/api/v1/dms", [this](const httplib::Request& req, httplib::Response& res) {
+    server.Get("/api/v1/dms", [this](const httplib::Request& req, httplib::Response& res) {
         handle_errors(res, [&]() {
             const auto session = auth_service_.require_session(extract_bearer_token(req));
             const auto conversations = social_service_.list_conversations(session);
@@ -360,7 +378,7 @@ void HttpServer::configure_routes() {
         });
     });
 
-    server_.Post("/api/v1/dms", [this](const httplib::Request& req, httplib::Response& res) {
+    server.Post("/api/v1/dms", [this](const httplib::Request& req, httplib::Response& res) {
         handle_errors(res, [&]() {
             const auto session = auth_service_.require_session(extract_bearer_token(req));
             const auto body = parse_body(req);
@@ -372,7 +390,7 @@ void HttpServer::configure_routes() {
         });
     });
 
-    server_.Get(R"(/api/v1/dms/(\d+)/messages)",
+    server.Get(R"(/api/v1/dms/(\d+)/messages)",
                 [this](const httplib::Request& req, httplib::Response& res) {
                     handle_errors(res, [&]() {
                         const auto session =
@@ -388,7 +406,7 @@ void HttpServer::configure_routes() {
                     });
                 });
 
-    server_.Post(R"(/api/v1/dms/(\d+)/messages)",
+    server.Post(R"(/api/v1/dms/(\d+)/messages)",
                  [this](const httplib::Request& req, httplib::Response& res) {
                      handle_errors(res, [&]() {
                          const auto session =
@@ -403,7 +421,7 @@ void HttpServer::configure_routes() {
                      });
                  });
 
-    server_.Post(R"(/api/v1/dm-messages/(\d+)/reactions)",
+    server.Post(R"(/api/v1/dm-messages/(\d+)/reactions)",
                  [this](const httplib::Request& req, httplib::Response& res) {
                      handle_errors(res, [&]() {
                          const auto session =
@@ -416,7 +434,7 @@ void HttpServer::configure_routes() {
                      });
                  });
 
-    server_.Post(R"(/api/v1/dm-messages/(\d+)/edit)",
+    server.Post(R"(/api/v1/dm-messages/(\d+)/edit)",
                  [this](const httplib::Request& req, httplib::Response& res) {
                      handle_errors(res, [&]() {
                          const auto session =
@@ -429,7 +447,7 @@ void HttpServer::configure_routes() {
                      });
                  });
 
-    server_.Delete(R"(/api/v1/dm-messages/(\d+))",
+    server.Delete(R"(/api/v1/dm-messages/(\d+))",
                    [this](const httplib::Request& req, httplib::Response& res) {
                        handle_errors(res, [&]() {
                            const auto session =
@@ -439,7 +457,7 @@ void HttpServer::configure_routes() {
                        });
                    });
 
-    server_.Get("/api/v1/servers", [this](const httplib::Request& req, httplib::Response& res) {
+    server.Get("/api/v1/servers", [this](const httplib::Request& req, httplib::Response& res) {
         handle_errors(res, [&]() {
             const auto session = auth_service_.require_session(extract_bearer_token(req));
             const auto servers = chat_service_.list_servers(session);
@@ -453,7 +471,7 @@ void HttpServer::configure_routes() {
         });
     });
 
-    server_.Post("/api/v1/servers", [this](const httplib::Request& req, httplib::Response& res) {
+    server.Post("/api/v1/servers", [this](const httplib::Request& req, httplib::Response& res) {
         handle_errors(res, [&]() {
             const auto session = auth_service_.require_session(extract_bearer_token(req));
             const auto body = parse_body(req);
@@ -465,7 +483,7 @@ void HttpServer::configure_routes() {
         });
     });
 
-    server_.Post("/api/v1/servers/join", [this](const httplib::Request& req, httplib::Response& res) {
+    server.Post("/api/v1/servers/join", [this](const httplib::Request& req, httplib::Response& res) {
         handle_errors(res, [&]() {
             const auto session = auth_service_.require_session(extract_bearer_token(req));
             const auto body = parse_body(req);
@@ -477,7 +495,7 @@ void HttpServer::configure_routes() {
         });
     });
 
-    server_.Get(R"(/api/v1/servers/(\d+)/invite)",
+    server.Get(R"(/api/v1/servers/(\d+)/invite)",
                 [this](const httplib::Request& req, httplib::Response& res) {
                     handle_errors(res, [&]() {
                         const auto session =
@@ -490,7 +508,7 @@ void HttpServer::configure_routes() {
                     });
                 });
 
-    server_.Post(R"(/api/v1/servers/(\d+)/invite/regenerate)",
+    server.Post(R"(/api/v1/servers/(\d+)/invite/regenerate)",
                  [this](const httplib::Request& req, httplib::Response& res) {
                      handle_errors(res, [&]() {
                          const auto session =
@@ -502,7 +520,7 @@ void HttpServer::configure_routes() {
                      });
                  });
 
-    server_.Get(R"(/api/v1/servers/(\d+)/members)",
+    server.Get(R"(/api/v1/servers/(\d+)/members)",
                 [this](const httplib::Request& req, httplib::Response& res) {
                     handle_errors(res, [&]() {
                         const auto session =
@@ -517,7 +535,7 @@ void HttpServer::configure_routes() {
                     });
                 });
 
-    server_.Get(R"(/api/v1/servers/(\d+)/channels)",
+    server.Get(R"(/api/v1/servers/(\d+)/channels)",
                 [this](const httplib::Request& req, httplib::Response& res) {
                     handle_errors(res, [&]() {
                         const auto session =
@@ -535,7 +553,7 @@ void HttpServer::configure_routes() {
                     });
                 });
 
-    server_.Post(R"(/api/v1/servers/(\d+)/channels)",
+    server.Post(R"(/api/v1/servers/(\d+)/channels)",
                  [this](const httplib::Request& req, httplib::Response& res) {
                      handle_errors(res, [&]() {
                          const auto session =
@@ -552,7 +570,7 @@ void HttpServer::configure_routes() {
                      });
                  });
 
-    server_.Get(R"(/api/v1/channels/(\d+)/messages)",
+    server.Get(R"(/api/v1/channels/(\d+)/messages)",
                 [this](const httplib::Request& req, httplib::Response& res) {
                     handle_errors(res, [&]() {
                         const auto session =
@@ -573,7 +591,7 @@ void HttpServer::configure_routes() {
                     });
                 });
 
-    server_.Post(R"(/api/v1/channels/(\d+)/messages)",
+    server.Post(R"(/api/v1/channels/(\d+)/messages)",
                  [this](const httplib::Request& req, httplib::Response& res) {
                      handle_errors(res, [&]() {
                          const auto session =
@@ -590,7 +608,7 @@ void HttpServer::configure_routes() {
                      });
                  });
 
-    server_.Post(R"(/api/v1/channels/(\d+)/position)",
+    server.Post(R"(/api/v1/channels/(\d+)/position)",
                  [this](const httplib::Request& req, httplib::Response& res) {
                      handle_errors(res, [&]() {
                          const auto session =
@@ -602,7 +620,7 @@ void HttpServer::configure_routes() {
                      });
                  });
 
-    server_.Post(R"(/api/v1/messages/(\d+)/reactions)",
+    server.Post(R"(/api/v1/messages/(\d+)/reactions)",
                  [this](const httplib::Request& req, httplib::Response& res) {
                      handle_errors(res, [&]() {
                          const auto session =
@@ -615,7 +633,7 @@ void HttpServer::configure_routes() {
                      });
                  });
 
-    server_.Delete(R"(/api/v1/messages/(\d+))",
+    server.Delete(R"(/api/v1/messages/(\d+))",
                    [this](const httplib::Request& req, httplib::Response& res) {
                        handle_errors(res, [&]() {
                            const auto session =
@@ -625,7 +643,7 @@ void HttpServer::configure_routes() {
                        });
                    });
 
-    server_.Post(R"(/api/v1/messages/(\d+)/edit)",
+    server.Post(R"(/api/v1/messages/(\d+)/edit)",
                  [this](const httplib::Request& req, httplib::Response& res) {
                      handle_errors(res, [&]() {
                          const auto session =
@@ -641,7 +659,7 @@ void HttpServer::configure_routes() {
 
 void HttpServer::run() {
     std::cout << "Hangout backend listening on http://" << host_ << ':' << port_ << '\n';
-    server_.listen(host_, port_);
+    server_->server.listen(host_, port_);
 }
 
 }  // namespace hangout
