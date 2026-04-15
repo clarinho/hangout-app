@@ -3,6 +3,7 @@ const state = {
   token: localStorage.getItem("hangout.token") || "",
   user: JSON.parse(localStorage.getItem("hangout.user") || "null"),
   updateDismissTimer: null,
+  updateOverlayStartedAt: Date.now(),
   servers: [],
   channels: [],
   messages: [],
@@ -149,7 +150,9 @@ const renderUpdateStatus = (status = {}) => {
   }
 
   if (canDismiss) {
-    state.updateDismissTimer = window.setTimeout(dismissUpdateOverlay, 900);
+    const elapsedMs = Date.now() - state.updateOverlayStartedAt;
+    const remainingMs = Math.max(0, 2000 - elapsedMs);
+    state.updateDismissTimer = window.setTimeout(dismissUpdateOverlay, remainingMs);
   }
 };
 
