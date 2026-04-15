@@ -103,7 +103,7 @@ const configureAutoUpdates = () => {
     });
 
     setTimeout(() => {
-      autoUpdater.quitAndInstall(false, true);
+      autoUpdater.quitAndInstall(true, true);
     }, 1200);
   });
 

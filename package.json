@@ -1,6 +1,6 @@
 {
   "name": "hangout-journal",
-  "version": "0.1.3",
+  "version": "0.1.4",
   "private": true,
   "description": "Electron desktop client for the Hangout C++ chat backend.",
   "author": "Hangout Journal",
