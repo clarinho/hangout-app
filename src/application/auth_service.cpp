@@ -99,11 +99,13 @@ User AuthService::update_profile(const SessionContext& session,
                                  const std::string& display_name,
                                  const std::string& status_text,
                                  const std::string& user_status,
-                                 const std::string& avatar_color) {
+                                 const std::string& avatar_color,
+                                 const std::string& avatar_url) {
     const auto name = trim_copy(display_name);
     const auto status = trim_copy(status_text);
     const auto availability = trim_copy(user_status).empty() ? "online" : trim_copy(user_status);
     const auto color = trim_copy(avatar_color).empty() ? "#c315d2" : trim_copy(avatar_color);
+    const auto image_url = trim_copy(avatar_url);
     if (name.size() < 2U || name.size() > 40U) {
         throw ValidationError("Display name must be 2-40 characters.");
     }
@@ -113,7 +115,13 @@ User AuthService::update_profile(const SessionContext& session,
     if (availability != "online" && availability != "idle" && availability != "dnd" && availability != "offline") {
         throw ValidationError("User status must be online, idle, dnd, or offline.");
     }
-    return users_.update_profile(session.user.id, name, status, availability, color, now_ms());
+    if (image_url.size() > 512U) {
+        throw ValidationError("Profile picture URL cannot exceed 512 characters.");
+    }
+    if (!image_url.empty() && image_url.rfind("http://", 0) != 0 && image_url.rfind("https://", 0) != 0) {
+        throw ValidationError("Profile picture URL must start with http:// or https://.");
+    }
+    return users_.update_profile(session.user.id, name, status, availability, color, image_url, now_ms());
 }
 
 void AuthService::heartbeat(const SessionContext& session) {

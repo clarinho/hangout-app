@@ -65,6 +65,7 @@ json user_json(const User& user) {
         { "statusText", user.status_text },
         { "userStatus", user.user_status.empty() ? "online" : user.user_status },
         { "avatarColor", user.avatar_color.empty() ? "#c315d2" : user.avatar_color },
+        { "avatarUrl", user.avatar_url },
         { "lastSeenAtMs", user.last_seen_at_ms },
         { "createdAtMs", user.created_at_ms },
     };
@@ -302,7 +303,8 @@ void HttpServer::configure_routes() {
                                                            body.value("displayName", session.user.username),
                                                            body.value("statusText", ""),
                                                            body.value("userStatus", "online"),
-                                                           body.value("avatarColor", "#c315d2"));
+                                                           body.value("avatarColor", "#c315d2"),
+                                                           body.value("avatarUrl", ""));
             res.set_content(json { { "user", user_json(user) } }.dump(2), "application/json");
         });
     });

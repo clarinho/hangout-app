@@ -20,7 +20,8 @@ public:
                         const std::string& display_name,
                         const std::string& status_text,
                         const std::string& user_status,
-                        const std::string& avatar_color);
+                        const std::string& avatar_color,
+                        const std::string& avatar_url);
     void heartbeat(const SessionContext& session);
 
 private:

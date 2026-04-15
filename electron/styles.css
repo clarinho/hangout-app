@@ -288,8 +288,16 @@ button {
   height: 38px;
   border-radius: 8px;
   background: var(--accent);
+  background-position: center;
+  background-size: cover;
   color: white;
   font-weight: 900;
+}
+
+.account-avatar.compact {
+  width: 34px;
+  height: 34px;
+  font-size: 12px;
 }
 
 .account-avatar.large {
@@ -623,6 +631,8 @@ input:disabled {
   height: 42px;
   border-radius: 8px;
   background: var(--panel-soft);
+  background-position: center;
+  background-size: cover;
   color: var(--accent-strong);
   font-weight: 900;
 }
@@ -743,6 +753,44 @@ input:disabled {
   display: grid;
   gap: 9px;
   margin-top: 4px;
+}
+
+.right-member-list {
+  display: grid;
+  gap: 8px;
+}
+
+.right-member {
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr);
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  border-radius: 8px;
+  padding: 8px;
+  background: transparent;
+  text-align: left;
+}
+
+.right-member:hover {
+  background: var(--panel-soft);
+}
+
+.right-member span {
+  display: grid;
+  min-width: 0;
+}
+
+.right-member strong,
+.right-member small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.right-member small {
+  color: var(--muted);
+  font-size: 12px;
 }
 
 .activity-item {

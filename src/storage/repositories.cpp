@@ -72,8 +72,9 @@ std::optional<User> read_user(sqlite3_stmt* stmt) {
         .status_text = column_text(stmt, 3),
         .user_status = column_text(stmt, 4),
         .avatar_color = column_text(stmt, 5),
-        .last_seen_at_ms = sqlite3_column_int64(stmt, 6),
-        .created_at_ms = sqlite3_column_int64(stmt, 7),
+        .avatar_url = column_text(stmt, 6),
+        .last_seen_at_ms = sqlite3_column_int64(stmt, 7),
+        .created_at_ms = sqlite3_column_int64(stmt, 8),
     };
 }
 
@@ -139,7 +140,7 @@ std::optional<User> UserRepository::find_by_id(std::int64_t user_id) const {
     Statement stmt(db_,
                    "SELECT id, username, COALESCE(display_name, username), COALESCE(status_text, ''), "
                    "COALESCE(user_status, 'online'), COALESCE(avatar_color, '#c315d2'), "
-                   "COALESCE(last_seen_at_ms, 0), created_at_ms FROM users WHERE id = ?;");
+                   "COALESCE(avatar_url, ''), COALESCE(last_seen_at_ms, 0), created_at_ms FROM users WHERE id = ?;");
     bind_int64(db_, stmt.get(), 1, user_id);
     return read_user(stmt.get());
 }
@@ -148,7 +149,7 @@ std::optional<User> UserRepository::find_by_username(const std::string& username
     Statement stmt(db_,
                    "SELECT id, username, COALESCE(display_name, username), COALESCE(status_text, ''), "
                    "COALESCE(user_status, 'online'), COALESCE(avatar_color, '#c315d2'), "
-                   "COALESCE(last_seen_at_ms, 0), created_at_ms FROM users WHERE username = ?;");
+                   "COALESCE(avatar_url, ''), COALESCE(last_seen_at_ms, 0), created_at_ms FROM users WHERE username = ?;");
     bind_text(db_, stmt.get(), 1, username);
     return read_user(stmt.get());
 }
@@ -179,16 +180,18 @@ User UserRepository::update_profile(std::int64_t user_id,
                                     const std::string& status_text,
                                     const std::string& user_status,
                                     const std::string& avatar_color,
+                                    const std::string& avatar_url,
                                     std::int64_t now_ms) const {
     Statement stmt(db_,
                    "UPDATE users SET display_name = ?, status_text = ?, user_status = ?, "
-                   "avatar_color = ?, last_seen_at_ms = ? WHERE id = ?;");
+                   "avatar_color = ?, avatar_url = ?, last_seen_at_ms = ? WHERE id = ?;");
     bind_text(db_, stmt.get(), 1, display_name);
     bind_text(db_, stmt.get(), 2, status_text);
     bind_text(db_, stmt.get(), 3, user_status);
     bind_text(db_, stmt.get(), 4, avatar_color);
-    bind_int64(db_, stmt.get(), 5, now_ms);
-    bind_int64(db_, stmt.get(), 6, user_id);
+    bind_text(db_, stmt.get(), 5, avatar_url);
+    bind_int64(db_, stmt.get(), 6, now_ms);
+    bind_int64(db_, stmt.get(), 7, user_id);
     check_sqlite_step(sqlite3_step(stmt.get()), db_, "Failed to update profile");
     auto user = find_by_id(user_id);
     if (!user.has_value()) {
@@ -330,8 +333,8 @@ std::vector<ServerMember> ServerRepository::list_members(std::int64_t user_id, s
     Statement stmt(db_,
                    "SELECT u.id, u.username, COALESCE(u.display_name, u.username), "
                    "COALESCE(u.status_text, ''), COALESCE(u.user_status, 'online'), "
-                   "COALESCE(u.avatar_color, '#c315d2'), COALESCE(u.last_seen_at_ms, 0), "
-                   "u.created_at_ms, m.role, m.joined_at_ms "
+                   "COALESCE(u.avatar_color, '#c315d2'), COALESCE(u.avatar_url, ''), "
+                   "COALESCE(u.last_seen_at_ms, 0), u.created_at_ms, m.role, m.joined_at_ms "
                    "FROM server_memberships m "
                    "JOIN users u ON u.id = m.user_id "
                    "WHERE m.server_id = ? ORDER BY m.role DESC, u.username ASC;");
@@ -352,11 +355,12 @@ std::vector<ServerMember> ServerRepository::list_members(std::int64_t user_id, s
                 .status_text = column_text(stmt.get(), 3),
                 .user_status = column_text(stmt.get(), 4),
                 .avatar_color = column_text(stmt.get(), 5),
-                .last_seen_at_ms = sqlite3_column_int64(stmt.get(), 6),
-                .created_at_ms = sqlite3_column_int64(stmt.get(), 7),
+                .avatar_url = column_text(stmt.get(), 6),
+                .last_seen_at_ms = sqlite3_column_int64(stmt.get(), 7),
+                .created_at_ms = sqlite3_column_int64(stmt.get(), 8),
             },
-            .role = column_text(stmt.get(), 8),
-            .joined_at_ms = sqlite3_column_int64(stmt.get(), 9),
+            .role = column_text(stmt.get(), 9),
+            .joined_at_ms = sqlite3_column_int64(stmt.get(), 10),
         });
     }
     return members;

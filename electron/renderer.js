@@ -27,6 +27,7 @@ const state = {
   featureFlags: loadFeatureFlags(),
   updateDismissTimer: null,
   updateOverlayStartedAt: Date.now(),
+  serverMembers: [],
   servers: [],
   channels: [],
   messages: [],
@@ -58,6 +59,7 @@ const els = {
   createServerButton: $("createServerButton"),
   currentUser: $("currentUser"),
   avatarColorInput: $("avatarColorInput"),
+  avatarUrlInput: $("avatarUrlInput"),
   displayNameInput: $("displayNameInput"),
   dmSectionHeading: $("dmSectionHeading"),
   dmList: $("dmList"),
@@ -95,6 +97,7 @@ const els = {
   regenerateInviteButton: $("regenerateInviteButton"),
   refreshDmsButton: $("refreshDmsButton"),
   refreshButton: $("refreshButton"),
+  rightMemberList: $("rightMemberList"),
   presencePanel: $("presencePanel"),
   settingsApiBase: $("settingsApiBase"),
   settingsAvatar: $("settingsAvatar"),
@@ -238,6 +241,21 @@ const formatTime = (ms) =>
     minute: "2-digit"
   }).format(new Date(ms));
 
+const setAvatar = (element, user) => {
+  const username = user?.username || "User";
+  const avatarUrl = user?.avatarUrl || "";
+  element.textContent = "";
+  element.style.backgroundImage = "";
+  element.style.backgroundColor = user?.avatarColor || "#c315d2";
+
+  if (avatarUrl) {
+    element.style.backgroundImage = `url("${avatarUrl.replaceAll('"', "%22")}")`;
+    return;
+  }
+
+  element.textContent = initials(username);
+};
+
 const escapeHtml = (value) =>
   String(value)
     .replaceAll("&", "&amp;")
@@ -246,26 +264,40 @@ const escapeHtml = (value) =>
     .replaceAll('"', "&quot;")
     .replaceAll("'", "&#039;");
 
+const avatarHtml = (user, className = "account-avatar") => {
+  const avatarUrl = user?.avatarUrl || "";
+  const color = escapeHtml(user?.avatarColor || "#c315d2");
+  if (avatarUrl) {
+    return `<div class="${className}" style="background-color:${color};background-image:url('${escapeHtml(avatarUrl)}')"></div>`;
+  }
+
+  return `<div class="${className}" style="background-color:${color}">${escapeHtml(initials(user?.username || "User"))}</div>`;
+};
+
 const activeServer = () => state.servers.find((server) => server.id === state.activeServerId);
 const activeChannel = () => state.channels.find((channel) => channel.id === state.activeChannelId);
 const activeConversation = () =>
   state.dmConversations.find((conversation) => conversation.id === state.activeConversationId);
+const knownUser = (username) =>
+  state.serverMembers.find((member) => member.user.username === username)?.user ||
+  state.friends.friends.find((user) => user.username === username) ||
+  (state.user?.username === username ? state.user : { username });
 let pendingNameModal = null;
 
 const renderUser = () => {
   const username = state.user?.username || "Guest";
-  const avatar = initials(username);
 
   els.currentUser.textContent = username;
   els.accountName.textContent = username;
-  els.accountAvatar.textContent = avatar;
+  setAvatar(els.accountAvatar, state.user);
   els.settingsUsername.textContent = username;
-  els.settingsAvatar.textContent = avatar;
+  setAvatar(els.settingsAvatar, state.user);
   els.settingsApiBase.textContent = state.apiBaseUrl || "Backend not connected";
   els.displayNameInput.value = state.user?.displayName || username;
   els.statusTextInput.value = state.user?.statusText || "";
   els.userStatusInput.value = state.user?.userStatus || "online";
   els.avatarColorInput.value = state.user?.avatarColor || "#c315d2";
+  els.avatarUrlInput.value = state.user?.avatarUrl || "";
   els.loginForm.classList.toggle("hidden", Boolean(state.token));
   els.accountStrip.classList.toggle("hidden", !state.token);
   els.createServerButton.disabled = !state.token;
@@ -474,7 +506,7 @@ const renderMessages = () => {
 
 const socialRow = ({ user, subtitle, actions = "" }) => `
   <div class="social-item ${actions ? "with-actions" : ""}">
-    <div class="account-avatar">${escapeHtml(initials(user.username))}</div>
+    ${avatarHtml(user)}
     <div>
       <strong>${escapeHtml(user.username)}</strong>
       <span>${escapeHtml(subtitle)}</span>
@@ -540,6 +572,40 @@ const renderFriends = () => {
   );
 };
 
+const renderRightMembers = () => {
+  els.rightMemberList.innerHTML = "";
+  if (!featureEnabled("serverMembers") || state.activeMode !== "channel" || !state.activeServerId) {
+    const empty = document.createElement("div");
+    empty.className = "empty-list";
+    empty.textContent = "Open a server channel.";
+    els.rightMemberList.appendChild(empty);
+    return;
+  }
+
+  if (state.serverMembers.length === 0) {
+    const empty = document.createElement("div");
+    empty.className = "empty-list";
+    empty.textContent = "No members loaded.";
+    els.rightMemberList.appendChild(empty);
+    return;
+  }
+
+  for (const member of state.serverMembers) {
+    const item = document.createElement("button");
+    item.className = `right-member ${member.user.userStatus || "online"}`;
+    item.type = "button";
+    item.dataset.profileUsername = member.user.username;
+    item.innerHTML = `
+      ${avatarHtml(member.user, "account-avatar compact")}
+      <span>
+        <strong>${escapeHtml(member.user.displayName || member.user.username)}</strong>
+        <small>${escapeHtml(member.role)} · ${escapeHtml(member.user.userStatus || "online")}</small>
+      </span>
+    `;
+    els.rightMemberList.appendChild(item);
+  }
+};
+
 const render = () => {
   applyFeatureFlags();
   renderUser();
@@ -549,6 +615,7 @@ const render = () => {
   renderHeader();
   renderMessages();
   renderFriends();
+  renderRightMembers();
 };
 
 const requireToken = () => {
@@ -625,6 +692,16 @@ const loadDmConversations = async () => {
   state.dmConversations = payload.conversations || [];
 };
 
+const loadServerMembers = async () => {
+  requireToken();
+  if (!featureEnabled("serverMembers") || !state.activeServerId) {
+    state.serverMembers = [];
+    return;
+  }
+  const payload = await window.hangout.serverMembers(state.apiBaseUrl, state.token, state.activeServerId);
+  state.serverMembers = payload.members || [];
+};
+
 const refreshAll = async ({ quiet = false } = {}) => {
   try {
     await loadServers();
@@ -632,6 +709,7 @@ const refreshAll = async ({ quiet = false } = {}) => {
     await loadMessages();
     await loadFriends();
     await loadDmConversations();
+    await loadServerMembers();
     setConnected(true);
     render();
     if (!quiet) {
@@ -656,6 +734,7 @@ const selectServer = async (serverId) => {
   try {
     await loadChannels();
     await loadMessages();
+    await loadServerMembers();
     setConnected(true);
   } catch (error) {
     setConnected(false);
@@ -672,6 +751,7 @@ const selectChannel = async (channelId) => {
   render();
   try {
     await loadMessages();
+    await loadServerMembers();
     setConnected(true);
   } catch (error) {
     setConnected(false);
@@ -1074,7 +1154,8 @@ els.profileForm.addEventListener("submit", async (event) => {
       displayName: els.displayNameInput.value.trim(),
       statusText: els.statusTextInput.value.trim(),
       userStatus: els.userStatusInput.value,
-      avatarColor: els.avatarColorInput.value.trim()
+      avatarColor: els.avatarColorInput.value.trim(),
+      avatarUrl: els.avatarUrlInput.value.trim()
     });
     state.user = result.user;
     localStorage.setItem("hangout.user", JSON.stringify(state.user));
@@ -1270,9 +1351,10 @@ els.messagePane.addEventListener("click", async (event) => {
   const profileTarget = event.target.closest("[data-profile-username]");
   if (profileTarget) {
     const username = profileTarget.dataset.profileUsername;
-    els.popoverAvatar.textContent = initials(username);
-    els.popoverName.textContent = username;
-    els.popoverMeta.textContent = username === state.user?.username ? "You" : "Chat member";
+    const user = knownUser(username);
+    setAvatar(els.popoverAvatar, user);
+    els.popoverName.textContent = user.displayName || username;
+    els.popoverMeta.textContent = username === state.user?.username ? "You" : user.statusText || "Chat member";
     const rect = profileTarget.getBoundingClientRect();
     els.profilePopover.style.left = `${Math.min(rect.left, window.innerWidth - 240)}px`;
     els.profilePopover.style.top = `${Math.min(rect.bottom + 8, window.innerHeight - 90)}px`;
@@ -1366,6 +1448,11 @@ const startPolling = () => {
       if (featureEnabled("socialFeatures")) {
         loadFriends()
           .then(() => renderFriends())
+          .catch(() => {});
+      }
+      if (featureEnabled("serverMembers") && state.activeServerId) {
+        loadServerMembers()
+          .then(() => renderRightMembers())
           .catch(() => {});
       }
     }

@@ -125,19 +125,8 @@
         </div>
 
         <div class="activity-list">
-          <p class="panel-section-title">Prototype status</p>
-          <div class="activity-item online">
-            <span></span>
-            SQLite persistence
-          </div>
-          <div class="activity-item online">
-            <span></span>
-            Auth sessions
-          </div>
-          <div class="activity-item idle">
-            <span></span>
-            WebSockets next
-          </div>
+          <p class="panel-section-title">Members</p>
+          <div id="rightMemberList" class="right-member-list"></div>
         </div>
       </aside>
     </div>
@@ -170,6 +159,7 @@
             <option value="offline">Invisible</option>
           </select>
           <input id="avatarColorInput" placeholder="#c315d2" />
+          <input id="avatarUrlInput" placeholder="Profile picture URL" />
           <button type="submit">Save Profile</button>
         </form>
 

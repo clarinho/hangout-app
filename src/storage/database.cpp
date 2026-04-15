@@ -109,6 +109,7 @@ void Database::migrate() {
             status_text TEXT,
             user_status TEXT NOT NULL DEFAULT 'online',
             avatar_color TEXT NOT NULL DEFAULT '#c315d2',
+            avatar_url TEXT,
             last_seen_at_ms INTEGER NOT NULL DEFAULT 0,
             created_at_ms INTEGER NOT NULL
         );
@@ -235,6 +236,9 @@ void Database::migrate() {
     }
     if (!column_exists(db_, "users", "avatar_color")) {
         execute("ALTER TABLE users ADD COLUMN avatar_color TEXT NOT NULL DEFAULT '#c315d2';");
+    }
+    if (!column_exists(db_, "users", "avatar_url")) {
+        execute("ALTER TABLE users ADD COLUMN avatar_url TEXT;");
     }
     if (!column_exists(db_, "users", "last_seen_at_ms")) {
         execute("ALTER TABLE users ADD COLUMN last_seen_at_ms INTEGER NOT NULL DEFAULT 0;");

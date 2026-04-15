@@ -23,6 +23,7 @@ public:
                         const std::string& status_text,
                         const std::string& user_status,
                         const std::string& avatar_color,
+                        const std::string& avatar_url,
                         std::int64_t now_ms) const;
     void heartbeat(std::int64_t user_id, std::int64_t now_ms) const;
 

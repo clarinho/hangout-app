@@ -13,6 +13,7 @@ struct User {
     std::string status_text;
     std::string user_status;
     std::string avatar_color;
+    std::string avatar_url;
     std::int64_t last_seen_at_ms {};
     std::int64_t created_at_ms {};
 };
