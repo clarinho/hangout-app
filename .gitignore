@@ -2,6 +2,7 @@ build/
 data/
 node_modules/
 release/
+website-dist/
 
 *.db
 *.db-shm

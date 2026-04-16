@@ -218,6 +218,40 @@ Architecture:
 Friend's PC -> Electron app -> https://your-domain.com -> Nginx -> C++ backend -> SQLite
 ```
 
+## Installer Website
+
+The project includes a static download page you can upload to Hostinger Personal hosting. Build it from the repo root:
+
+```powershell
+.\build-download-page
+```
+
+That creates `website-dist/` with a big download button and the newest valid installer copied to:
+
+```text
+website-dist/downloads/HangoutSetup.exe
+```
+
+Upload the contents of `website-dist/` to Hostinger File Manager:
+
+```text
+public_html/
+```
+
+or:
+
+```text
+public_html/download/
+```
+
+If you upload to `public_html/download/`, users can visit:
+
+```text
+https://your-domain.com/download/
+```
+
+Do not commit `website-dist/`; it contains the large installer and is ignored by Git.
+
 ### 1. Configure production URLs
 
 Edit `package.json` before building the installer:

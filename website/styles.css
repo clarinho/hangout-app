@@ -1,0 +1,255 @@
+:root {
+  color-scheme: dark;
+  --bg: #07070b;
+  --panel: #0e0d14;
+  --panel-strong: #14121b;
+  --line: #262231;
+  --text: #f2eff7;
+  --muted: #a7a0b2;
+  --dim: #706a7d;
+  --accent: #c315d2;
+  --accent-strong: #f030e5;
+  --cyan: #38d8d0;
+  --green: #31d17c;
+  --shadow: rgba(0, 0, 0, 0.38);
+  font-family:
+    Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  background: var(--bg);
+  color: var(--text);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  min-height: 100vh;
+  background:
+    linear-gradient(180deg, rgba(195, 21, 210, 0.13), transparent 280px),
+    var(--bg);
+}
+
+a {
+  color: inherit;
+}
+
+.download-shell {
+  width: min(1120px, calc(100% - 36px));
+  margin: 0 auto;
+  padding: 38px 0;
+}
+
+.hero {
+  display: grid;
+  grid-template-columns: minmax(0, 0.92fr) minmax(340px, 1fr);
+  align-items: center;
+  gap: 46px;
+  min-height: calc(100vh - 180px);
+}
+
+.brand-row {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 42px;
+  color: var(--muted);
+  font-weight: 800;
+}
+
+.brand-mark {
+  display: grid;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  border-radius: 8px;
+  background: var(--accent);
+  color: #fff;
+  font-weight: 900;
+}
+
+.eyebrow {
+  margin: 0 0 12px;
+  color: var(--accent-strong);
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: 0;
+  text-transform: uppercase;
+}
+
+h1 {
+  max-width: 760px;
+  margin: 0;
+  font-size: clamp(42px, 8vw, 74px);
+  line-height: 0.95;
+}
+
+.hero-text {
+  max-width: 58ch;
+  margin: 22px 0 0;
+  color: var(--muted);
+  font-size: 18px;
+  line-height: 1.65;
+}
+
+.download-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  margin-top: 34px;
+}
+
+.download-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 54px;
+  border-radius: 8px;
+  padding: 0 24px;
+  background: var(--accent);
+  color: white;
+  font-weight: 900;
+  text-decoration: none;
+  box-shadow: 0 16px 40px rgba(195, 21, 210, 0.24);
+  transition:
+    transform 140ms ease,
+    background 140ms ease;
+}
+
+.download-button:hover {
+  transform: translateY(-1px);
+  background: var(--accent-strong);
+}
+
+.version-pill {
+  min-height: 38px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 9px 12px;
+  color: var(--muted);
+  background: rgba(14, 13, 20, 0.74);
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.install-note {
+  max-width: 56ch;
+  margin: 16px 0 0;
+  color: var(--dim);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.app-preview {
+  position: relative;
+  min-height: 520px;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--panel);
+  box-shadow: 0 28px 80px var(--shadow);
+}
+
+.app-preview img {
+  width: 100%;
+  height: 100%;
+  min-height: 520px;
+  object-fit: cover;
+  filter: brightness(0.5) saturate(0.75);
+}
+
+.preview-panel {
+  position: absolute;
+  right: 22px;
+  bottom: 22px;
+  left: 22px;
+  display: grid;
+  gap: 12px;
+  border: 1px solid rgba(242, 239, 247, 0.12);
+  border-radius: 8px;
+  padding: 18px;
+  background: rgba(7, 7, 11, 0.82);
+  backdrop-filter: blur(12px);
+}
+
+.preview-top {
+  display: flex;
+  gap: 8px;
+}
+
+.preview-top span {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--dim);
+}
+
+.preview-message {
+  width: 68%;
+  height: 14px;
+  border-radius: 8px;
+  background: var(--line);
+}
+
+.preview-message.wide {
+  width: 88%;
+}
+
+.preview-message.accent {
+  width: 44%;
+  background: var(--accent);
+}
+
+.info-band {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+  margin-top: 24px;
+}
+
+.info-band article {
+  display: grid;
+  gap: 6px;
+  min-height: 104px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 16px;
+  background: rgba(14, 13, 20, 0.82);
+}
+
+.info-band strong {
+  font-size: 15px;
+}
+
+.info-band span {
+  color: var(--muted);
+  line-height: 1.45;
+}
+
+@media (max-width: 880px) {
+  .download-shell {
+    width: min(100% - 28px, 680px);
+    padding-top: 24px;
+  }
+
+  .hero {
+    grid-template-columns: 1fr;
+    gap: 28px;
+    min-height: 0;
+  }
+
+  .brand-row {
+    margin-bottom: 28px;
+  }
+
+  .app-preview,
+  .app-preview img {
+    min-height: 360px;
+  }
+
+  .info-band {
+    grid-template-columns: 1fr;
+  }
+}

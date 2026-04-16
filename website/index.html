@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Download Hangout</title>
+    <meta
+      name="description"
+      content="Download Hangout for Windows and join your servers, friends, channels, and direct messages."
+    />
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <main class="download-shell">
+      <section class="hero">
+        <div class="hero-copy">
+          <div class="brand-row">
+            <div class="brand-mark">hg</div>
+            <span>Hangout</span>
+          </div>
+
+          <p class="eyebrow">Windows desktop app</p>
+          <h1>Stay close to your servers, channels, and friends.</h1>
+          <p class="hero-text">
+            Install Hangout, sign in with your username, and start chatting with everyone on the shared server.
+          </p>
+
+          <div class="download-actions">
+            <a id="downloadButton" class="download-button" href="./downloads/HangoutSetup.exe" download>
+              Download for Windows
+            </a>
+            <span id="versionText" class="version-pill">Latest installer</span>
+          </div>
+
+          <p class="install-note">
+            Windows may ask you to confirm because this prototype is not code-signed yet.
+          </p>
+        </div>
+
+        <div class="app-preview" aria-label="Hangout preview">
+          <img
+            src="https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&w=1200&q=80"
+            alt="A laptop showing a collaborative desktop workspace"
+          />
+          <div class="preview-panel">
+            <div class="preview-top">
+              <span></span>
+              <span></span>
+              <span></span>
+            </div>
+            <div class="preview-message wide"></div>
+            <div class="preview-message"></div>
+            <div class="preview-message accent"></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="info-band">
+        <article>
+          <strong>Auto-updates</strong>
+          <span>Hangout checks for updates when it launches.</span>
+        </article>
+        <article>
+          <strong>Shared backend</strong>
+          <span>Everyone connects through the same hosted chat server.</span>
+        </article>
+        <article>
+          <strong>Windows installer</strong>
+          <span>Download once, then let the app keep itself current.</span>
+        </article>
+      </section>
+    </main>
+
+    <script src="./site-config.js"></script>
+    <script src="./download.js"></script>
+  </body>
+</html>
